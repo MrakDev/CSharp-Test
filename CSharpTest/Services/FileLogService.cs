@@ -9,15 +9,14 @@ using CSharpTest.Models;
 namespace CSharpTest.Services;
 
 /// <summary>
-/// Service for logging to a file
+///     Service for logging to a file
 /// </summary>
 public class FileLogService : ILogService
 {
-    public string LogFilePath { get; set; }
     private readonly object _lockObject = new();
 
     /// <summary>
-    /// Initializes a new instance of the FileLogService class
+    ///     Initializes a new instance of the FileLogService class
     /// </summary>
     /// <param name="logFilePath">Path to the log file</param>
     public FileLogService(string logFilePath)
@@ -25,36 +24,36 @@ public class FileLogService : ILogService
         LogFilePath = logFilePath ?? throw new ArgumentNullException(nameof(logFilePath));
     }
 
-    /// <inheritdoc/>
+    public string LogFilePath { get; set; }
+
+    /// <inheritdoc />
     public void LogInfo(string message)
     {
         WriteToLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - INFO: {message}");
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void LogError(string message)
     {
         WriteToLog($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - ERROR: {message}");
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void LogProcesses(IEnumerable<ProcessInfo> processes)
     {
         var processInfos = processes.ToList();
-        
+
         var builder = new StringBuilder();
         builder.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - Top {processInfos.Count} processes by memory usage:");
 
         foreach (var process in processInfos)
-        {
             builder.AppendLine($"  - {process.Name} (PID: {process.Id}): {process.MemoryUsageMb:N2} MB");
-        }
 
         WriteToLog(builder.ToString());
     }
 
     /// <summary>
-    /// Writes a message to the log file
+    ///     Writes a message to the log file
     /// </summary>
     /// <param name="logEntry">The message to write</param>
     private void WriteToLog(string logEntry)

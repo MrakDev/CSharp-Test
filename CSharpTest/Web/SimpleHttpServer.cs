@@ -12,19 +12,19 @@ using CSharpTest.Properties;
 namespace CSharpTest.Web;
 
 /// <summary>
-/// Simple HTTP server implementation
+///     Simple HTTP server implementation
 /// </summary>
 public class SimpleHttpServer : IHttpServer
 {
-    private readonly IProcessService _processService;
     private readonly ILogService _logService;
+    private readonly IProcessService _processService;
     private readonly string _url;
-    private HttpListener? _listener;
     private bool _isRunning;
+    private HttpListener? _listener;
     private Task? _listenTask;
 
     /// <summary>
-    /// Initializes a new instance of the SimpleHttpServer class
+    ///     Initializes a new instance of the SimpleHttpServer class
     /// </summary>
     /// <param name="processService">The process service to use</param>
     /// <param name="logService">The log service to use</param>
@@ -36,13 +36,10 @@ public class SimpleHttpServer : IHttpServer
         _url = url ?? throw new ArgumentNullException(nameof(url));
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public Task StartAsync()
     {
-        if (_isRunning)
-        {
-            return Task.CompletedTask;
-        }
+        if (_isRunning) return Task.CompletedTask;
 
         _listener = new HttpListener();
         _listener.Prefixes.Add(_url);
@@ -61,37 +58,27 @@ public class SimpleHttpServer : IHttpServer
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task StopAsync()
     {
-        if (!_isRunning || _listener == null)
-        {
-            return;
-        }
+        if (!_isRunning || _listener == null) return;
 
         _isRunning = false;
         _listener.Stop();
 
-        if (_listenTask != null)
-        {
-            await _listenTask;
-        }
+        if (_listenTask != null) await _listenTask;
 
         _listener.Close();
     }
 
     /// <summary>
-    /// Listens for incoming HTTP requests
+    ///     Listens for incoming HTTP requests
     /// </summary>
     private async Task ListenAsync()
     {
-        if (_listener == null)
-        {
-            return;
-        }
+        if (_listener == null) return;
 
         while (_isRunning)
-        {
             try
             {
                 var context = await _listener.GetContextAsync();
@@ -149,31 +136,30 @@ public class SimpleHttpServer : IHttpServer
             {
                 _logService.LogError($"Error handling request: {ex.Message}\n\n{ex.StackTrace}");
             }
-        }
     }
 
     /// <summary>
-    /// Serves the main HTML page
+    ///     Serves the main HTML page
     /// </summary>
     private async Task ServeMainPageAsync(HttpListenerContext context)
     {
         var buffer = Encoding.UTF8.GetBytes(Resources.index);
-        
+
         context.Response.ContentType = "text/html";
         context.Response.ContentLength64 = buffer.Length;
         await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-        
+
         context.Response.Close();
     }
 
     /// <summary>
-    /// Gets the list of processes as JSON
+    ///     Gets the list of processes as JSON
     /// </summary>
     private async Task GetProcessesAsync(HttpListenerContext context)
     {
         try
         {
-            var processes = _processService.GetAllProcessesBy(x=>x.StartTime);
+            var processes = _processService.GetAllProcessesBy(x => x.StartTime);
             var sb = new StringBuilder();
             sb.Append("[");
 
@@ -218,7 +204,7 @@ public class SimpleHttpServer : IHttpServer
     }
 
     /// <summary>
-    /// Gets the contents of the log file
+    ///     Gets the contents of the log file
     /// </summary>
     private async Task GetLogsAsync(HttpListenerContext context)
     {
@@ -226,13 +212,10 @@ public class SimpleHttpServer : IHttpServer
         {
             var logContents = "No logs found.";
 
-            if (File.Exists(_logService.LogFilePath))
-            {
-                logContents = File.ReadAllText(_logService.LogFilePath);
-            }
+            if (File.Exists(_logService.LogFilePath)) logContents = File.ReadAllText(_logService.LogFilePath);
 
             var buffer = Encoding.UTF8.GetBytes(logContents);
-            
+
             context.Response.ContentType = "text/plain";
             context.Response.ContentLength64 = buffer.Length;
             await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
@@ -241,7 +224,7 @@ public class SimpleHttpServer : IHttpServer
         {
             var errorMessage = $"Error reading log file: {ex.Message}";
             var buffer = Encoding.UTF8.GetBytes(errorMessage);
-            
+
             context.Response.ContentType = "text/plain";
             context.Response.ContentLength64 = buffer.Length;
             await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
@@ -253,7 +236,7 @@ public class SimpleHttpServer : IHttpServer
     }
 
     /// <summary>
-    /// Boosts a process priority
+    ///     Boosts a process priority
     /// </summary>
     private async Task BoostProcessAsync(HttpListenerContext context)
     {
@@ -270,13 +253,9 @@ public class SimpleHttpServer : IHttpServer
             var success = _processService.SetProcessPriority(pid, ProcessPriorityClass.High);
 
             if (success)
-            {
                 await SendJsonResponseAsync(context, true, $"Process {pid} priority set to High");
-            }
             else
-            {
                 await SendJsonResponseAsync(context, false, $"Failed to set process {pid} priority");
-            }
         }
         catch (Exception ex)
         {
@@ -289,7 +268,7 @@ public class SimpleHttpServer : IHttpServer
     }
 
     /// <summary>
-    /// Logs the top N processes by memory usage
+    ///     Logs the top N processes by memory usage
     /// </summary>
     private async Task LogTopProcessesAsync(HttpListenerContext context)
     {
@@ -299,9 +278,7 @@ public class SimpleHttpServer : IHttpServer
             var count = 5;
 
             if (!string.IsNullOrEmpty(countParam) && int.TryParse(countParam, out var requestedCount))
-            {
                 count = Clamp(requestedCount, 1, 20);
-            }
 
             var topProcesses = _processService.GetAllProcessesBy(x => x.MemoryUsageMb).Take(count);
             _logService.LogProcesses(topProcesses);
@@ -319,7 +296,7 @@ public class SimpleHttpServer : IHttpServer
     }
 
     /// <summary>
-    /// Sends a JSON response
+    ///     Sends a JSON response
     /// </summary>
     private static async Task SendJsonResponseAsync(HttpListenerContext context, bool success, string message)
     {
@@ -332,7 +309,7 @@ public class SimpleHttpServer : IHttpServer
     }
 
     /// <summary>
-    /// Sends an error response
+    ///     Sends an error response
     /// </summary>
     private static async Task SendErrorResponseAsync(HttpListenerContext context, string message)
     {
@@ -355,7 +332,7 @@ public class SimpleHttpServer : IHttpServer
     }
 
     /// <summary>
-    /// Sends a 404 Not Found response
+    ///     Sends a 404 Not Found response
     /// </summary>
     private static void Send404(HttpListenerContext context)
     {
@@ -367,24 +344,15 @@ public class SimpleHttpServer : IHttpServer
     {
         return str.Replace("\"", "\\\"").Replace("\\", "\\\\");
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Clamp(int value, int min, int max)
     {
-        if (min > max)
-        {
-            throw new ArgumentException("min must be less than or equal to max");
-        }
+        if (min > max) throw new ArgumentException("min must be less than or equal to max");
 
-        if (value < min)
-        {
-            return min;
-        }
+        if (value < min) return min;
 
-        if (value > max)
-        {
-            return max;
-        }
+        if (value > max) return max;
 
         return value;
     }

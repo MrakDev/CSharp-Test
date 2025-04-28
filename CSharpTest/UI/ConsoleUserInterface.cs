@@ -6,17 +6,17 @@ using CSharpTest.Interfaces;
 namespace CSharpTest.UI;
 
 /// <summary>
-/// Console-based user interface
+///     Console-based user interface
 /// </summary>
 public class ConsoleUserInterface : IUserInterface
 {
     private const int ProcessNameDisplayLength = 27;
-    private readonly IProcessService _processService;
     private readonly ILogService _logService;
+    private readonly IProcessService _processService;
     private bool _keepRunning = true;
 
     /// <summary>
-    /// Initializes a new instance of the ConsoleUserInterface class
+    ///     Initializes a new instance of the ConsoleUserInterface class
     /// </summary>
     /// <param name="processService">The process service to use</param>
     /// <param name="logService">The log service to use</param>
@@ -26,7 +26,7 @@ public class ConsoleUserInterface : IUserInterface
         _logService = logService ?? throw new ArgumentNullException(nameof(logService));
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task RunAsync()
     {
         Console.WriteLine(@"Process Manager Application");
@@ -53,13 +53,13 @@ public class ConsoleUserInterface : IUserInterface
     }
 
     /// <summary>
-    /// Displays the list of running processes
+    ///     Displays the list of running processes
     /// </summary>
     private void DisplayProcessList()
     {
         var separator = new string('-', 111);
 
-        
+
         Console.WriteLine("\nCurrent Running Processes:");
         Console.WriteLine(separator);
         Console.WriteLine("| {0,-30} | {1,-10} | {2,-15} | {3,-20} | {4,-20} |",
@@ -68,20 +68,19 @@ public class ConsoleUserInterface : IUserInterface
 
         var processes = _processService.GetAllProcessesBy(x => x.StartTime);
         foreach (var process in processes)
-        {
-            Console.WriteLine(@"| {0,-30} | {1,-10} | {2,-15:N2} | {3,-20:hh\:mm\:ss\.fff} | {4,-20:yyyy-MM-dd HH:mm:ss} |",
+            Console.WriteLine(
+                @"| {0,-30} | {1,-10} | {2,-15:N2} | {3,-20:hh\:mm\:ss\.fff} | {4,-20:yyyy-MM-dd HH:mm:ss} |",
                 process.Name.Length > ProcessNameDisplayLength + 3
                     ? process.Name[..ProcessNameDisplayLength] + "..."
                     : process.Name,
                 process.Id,
                 process.MemoryUsageMb, process.CpuTime, process.StartTime);
-        }
 
         Console.WriteLine(separator);
     }
 
     /// <summary>
-    /// Processes user input
+    ///     Processes user input
     /// </summary>
     private async Task ProcessUserInputAsync()
     {
@@ -97,7 +96,7 @@ public class ConsoleUserInterface : IUserInterface
         if (int.TryParse(input, out var pid))
         {
             var success = _processService.SetProcessPriority(pid, ProcessPriorityClass.High);
-            
+
             if (success)
             {
                 Console.WriteLine(@$"Successfully boosted process with PID: {pid} to High priority");

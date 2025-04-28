@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Manager</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #2ecc71;
+            --warning-color: #e74c3c;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #f1f1f1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-link {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            font-size: 16px;
+            flex: 1;
+            transition: background-color 0.3s;
+        }
+
+        .tab-link:hover {
+            background-color: #ddd;
+        }
+
+        .tab-link.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--secondary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .process-table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .log-container {
+            background-color: #f8f8f8;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .message {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            animation: fadeIn 0.5s;
+        }
+
+        .message-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .message-error {
+            background-color: rgba(231, 76, 60, 0.2);
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .refresh-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .refresh-interval {
+            display: flex;
+            align-items: center;
+        }
+
+        .refresh-interval label {
+            margin: 0 10px 0 0;
+        }
+
+        .boost-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-indicator.active {
+            background-color: var(--accent-color);
+        }
+
+        .status-indicator.inactive {
+            background-color: var(--warning-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #f1f1f1;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Process Manager</h1>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-link active" onclick="openTab(event, 'processes-tab')">Processes</button>
+        <button class="tab-link" onclick="openTab(event, 'logs-tab')">Logs</button>
+        <button class="tab-link" onclick="openTab(event, 'actions-tab')">Actions</button>
+    </div>
+
+    <!-- Processes Tab -->
+    <div id="processes-tab" class="tab-content active">
+        <div class="refresh-bar">
+            <div class="refresh-interval">
+                <label for="process-refresh-interval">Auto-refresh:</label>
+                <select id="process-refresh-interval" onchange="updateRefreshInterval('processes')">
+                    <option value="0">Off</option>
+                    <option value="5000" selected>5 seconds</option>
+                    <option value="10000">10 seconds</option>
+                    <option value="30000">30 seconds</option>
+                </select>
+            </div>
+            <button id="refresh-processes-btn" class="btn btn-primary" onclick="refreshProcesses()">
+                Refresh Now
+            </button>
+        </div>
+
+        <div class="process-table-container">
+            <table id="processes-table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>PID</th>
+                    <th>Memory (MB)</th>
+                    <th>CPU Time</th>
+                    <th>Priority</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="processes-body">
+                <tr>
+                    <td colspan="6" style="text-align: center;">Loading processes...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Logs Tab -->
+    <div id="logs-tab" class="tab-content">
+        <div class="refresh-bar">
+            <div class="refresh-interval">
+                <label for="log-refresh-interval">Auto-refresh:</label>
+                <select id="log-refresh-interval" onchange="updateRefreshInterval('logs')">
+                    <option value="0">Off</option>
+                    <option value="5000" selected>5 seconds</option>
+                    <option value="10000">10 seconds</option>
+                    <option value="30000">30 seconds</option>
+                </select>
+            </div>
+            <button id="refresh-logs-btn" class="btn btn-primary" onclick="refreshLogs()">
+                Refresh Now
+            </button>
+        </div>
+
+        <div class="log-container" id="log-content">
+            Loading logs...
+        </div>
+    </div>
+
+    <!-- Actions Tab -->
+    <div id="actions-tab" class="tab-content">
+        <div class="message hidden" id="action-message"></div>
+
+        <div class="form-group">
+            <h3>Boost Process Priority</h3>
+            <p>Enter a process ID to boost its priority to High</p>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <div style="flex: 1;">
+                    <label for="pid-input">Process ID (PID):</label>
+                    <input type="number" id="pid-input" placeholder="Enter PID">
+                </div>
+                <div style="align-self: flex-end;">
+                    <button class="btn btn-success" onclick="boostProcess()">Boost Process</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 30px;">
+            <h3>Log Top Processes</h3>
+            <p>Log the top memory-consuming processes to the log file</p>
+
+            <div style="margin-top: 15px;">
+                <label for="top-count">Number of processes:</label>
+                <input type="number" id="top-count" min="1" max="20" value="5" style="width: 100px;">
+                <button class="btn btn-success" onclick="logTopProcesses()" style="margin-left: 10px;">
+                    Log Top Processes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Process Manager &copy; 2025 - Running on Windows - .NET 9
+    </footer>
+</div>
+
+<script>
+    // Tab management
+    function openTab(evt, tabName) {
+        const tabContents = document.getElementsByClassName('tab-content');
+        for (let i = 0; i < tabContents.length; i++) {
+            tabContents[i].classList.remove('active');
+        }
+
+        const tabLinks = document.getElementsByClassName('tab-link');
+        for (let i = 0; i < tabLinks.length; i++) {
+            tabLinks[i].classList.remove('active');
+        }
+
+        document.getElementById(tabName).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+
+    // Refresh intervals
+    let processesRefreshInterval = null;
+    let logsRefreshInterval = null;
+
+    function updateRefreshInterval(type) {
+        if (type === 'processes') {
+            clearInterval(processesRefreshInterval);
+            const interval = document.getElementById('process-refresh-interval').value;
+            if (interval > 0) {
+                processesRefreshInterval = setInterval(refreshProcesses, parseInt(interval));
+            }
+        } else if (type === 'logs') {
+            clearInterval(logsRefreshInterval);
+            const interval = document.getElementById('log-refresh-interval').value;
+            if (interval > 0) {
+                logsRefreshInterval = setInterval(refreshLogs, parseInt(interval));
+            }
+        }
+    }
+    function secondsToTimeSpan(seconds) {
+        const totalSeconds = Math.floor(seconds);
+        const milliseconds = Math.round((seconds - totalSeconds) * 1000);
+
+        const days = Math.floor(totalSeconds / (24 * 3600));
+        const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+
+        return { days, hours, minutes, seconds: secs, milliseconds };
+    }
+
+    function formatTimeSpan(ts) {
+        return `${ts.days}.${String(ts.hours).padStart(2, '0')}:${String(ts.minutes).padStart(2, '0')}:${String(ts.seconds).padStart(2, '0')}.${String(ts.milliseconds).padStart(3, '0')}`;
+    }
+
+    // Process functions
+    function refreshProcesses() {
+        const processesBody = document.getElementById('processes-body');
+        const refreshButton = document.getElementById('refresh-processes-btn');
+
+        refreshButton.disabled = true;
+
+        fetch('/api/processes')
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+
+                if (data.length === 0) {
+                    html = '<tr><td colspan="6" style="text-align: center;">No processes found</td></tr>';
+                } else {
+                    data.forEach(process => {
+                        html += `
+                                                                             <tr>
+                                                                                 <td>${process.name}</td>
+                                                                                 <td>${process.id}</td>
+                                                                                 <td>${process.memoryUsageMb.toFixed(2)}</td>
+                                                                                 <td>${formatTimeSpan(secondsToTimeSpan(process.cpuTime))}</td>
+                                                                                 <td>${process.priority || 'Normal'}</td>
+                                                                                 <td>
+                                                                                     <button class="btn btn-success boost-btn" 
+                                                                                             onclick="boostProcessDirect(${process.id})">
+                                                                                         Boost
+                                                                                     </button>
+                                                                                 </td>
+                                                                             </tr>
+                                                                         `;
+                    });
+                }
+
+                processesBody.innerHTML = html;
+            })
+            .catch(error => {
+                processesBody.innerHTML = `
+                                                                     <tr>
+                                                                         <td colspan="6" style="text-align: center; color: red;">
+                                                                             Error loading processes: ${error.message}
+                                                                         </td>
+                                                                     </tr>
+                                                                 `;
+            })
+            .finally(() => {
+                refreshButton.disabled = false;
+            });
+    }
+
+    function boostProcessDirect(pid) {
+        boostProcessInternal(pid);
+    }
+
+    function boostProcess() {
+        const pidInput = document.getElementById('pid-input');
+        const pid = parseInt(pidInput.value);
+
+        if (isNaN(pid) || pid <= 0) {
+            showMessage('Please enter a valid Process ID', 'error');
+            return;
+        }
+
+        boostProcessInternal(pid);
+        pidInput.value = '';
+    }
+
+    function boostProcessInternal(pid) {
+        fetch(`/api/boost?pid=${pid}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(`Successfully boosted process with PID: ${pid}`, 'success');
+                    refreshProcesses();
+                    // If we're on the logs tab or about to view logs, refresh them
+                    if (document.getElementById('logs-tab').classList.contains('active')) {
+                        refreshLogs();
+                    }
+                } else {
+                    showMessage(`Failed to boost process: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`Error: ${error.message}`, 'error');
+            });
+    }
+
+    // Log functions
+    function refreshLogs() {
+        const logContent = document.getElementById('log-content');
+        const refreshButton = document.getElementById('refresh-logs-btn');
+
+        refreshButton.disabled = true;
+
+        fetch('/api/logs')
+            .then(response => response.text())
+            .then(data => {
+                logContent.textContent = data || 'No logs found';
+                // Auto-scroll to bottom of logs
+                logContent.scrollTop = logContent.scrollHeight;
+            })
+            .catch(error => {
+                logContent.textContent = `Error loading logs: ${error.message}`;
+            })
+            .finally(() => {
+                refreshButton.disabled = false;
+            });
+    }
+
+    function logTopProcesses() {
+        const countInput = document.getElementById('top-count');
+        const count = parseInt(countInput.value);
+
+        if (isNaN(count) || count <= 0 || count > 20) {
+            showMessage('Please enter a valid number between 1 and 20', 'error');
+            return;
+        }
+
+        fetch(`/api/log-top-processes?count=${count}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(`Successfully logged top ${count} processes`, 'success');
+                    // If we're on the logs tab or about to view logs, refresh them
+                    if (document.getElementById('logs-tab').classList.contains('active')) {
+                        refreshLogs();
+                    }
+                } else {
+                    showMessage(`Failed to log processes: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`Error: ${error.message}`, 'error');
+            });
+    }
+
+    // UI helpers
+    function showMessage(message, type) {
+        const messageElement = document.getElementById('action-message');
+        messageElement.textContent = message;
+        messageElement.className = `message message-${type}`;
+
+        // Switch to the actions tab if not already there
+        if (!document.getElementById('actions-tab').classList.contains('active')) {
+            document.querySelector('.tab-link[onclick*="actions-tab"]').click();
+        }
+
+        // Hide the message after 5 seconds
+        setTimeout(() => {
+            messageElement.classList.add('hidden');
+        }, 5000);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshProcesses();
+        refreshLogs();
+        updateRefreshInterval('processes');
+        updateRefreshInterval('logs');
+    });
+</script>
+</body>
+</html>
+
